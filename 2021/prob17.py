@@ -25,7 +25,7 @@ def hits(T):
 
 best = -inf
 scored_hit = True
-tot = 0
+total = 0
 vy = min(y_min, y_max)
 while scored_hit:
     scored_hit = vy < max(abs(y_min), abs(y_max))
@@ -33,8 +33,8 @@ while scored_hit:
         T = list(trajetory(0, 0, vx, vy))
         if hits(T):
             scored_hit = True
-            tot += 1
+            total += 1
             best = max(best, max_Y(T))
     vy += 1
 
-print("BEST:", best, tot)
+print(best, total)
