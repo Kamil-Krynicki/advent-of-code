@@ -1,5 +1,5 @@
 import re
-f = open('data/prob17.data')
+f = open('data/prob17.dat')
 x_min, x_max, y_min, y_max = map(int, re.search('target area: x=(.*)\\.\\.(.*), y=(.*)\\.\\.(.*)', f.read()).group(1, 2, 3, 4))
 
 inf = float('inf')

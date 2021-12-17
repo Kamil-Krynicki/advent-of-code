@@ -2,7 +2,7 @@ from collections import defaultdict, namedtuple
 
 point = namedtuple('Point', ['x', 'y'])
 
-f = open('data/problem5.dat')
+f = open('data/prob05.dat')
 
 class Line:
     def __init__(self, rep):
