@@ -23,7 +23,6 @@ def max_Y(T):
 def hits(T):
     return any(map(in_target, T))
 
-
 best = -inf
 scored_hit = True
 tot = 0
