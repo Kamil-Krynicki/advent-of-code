@@ -1,5 +1,8 @@
+from itertools import product
+
+
 class SnailFish:
-    def __init__(self, val=None, L=None, R=None, P=None):
+    def __init__(self, val=-1, L=None, R=None, P=None):
         self.val = val
         self.L, self.R, self.P = L, R, P
         if L:
@@ -8,62 +11,59 @@ class SnailFish:
             self.R.P = self
 
     def magnitude(self):
-        if self.__is_number(self):
-            return self.val
-        else:
+        if self.val < 0:
             return 3 * self.L.magnitude() + 2 * self.R.magnitude()
-
-    @staticmethod
-    def __is_number(fish):
-        return fish and fish.val is not None
-
-    def can_explode(self):
-        return SnailFish.__is_number(self.L) and SnailFish.__is_number(self.R)
+        else:
+            return self.val
 
     def explode(self, D=1):
-        if D > 4 and self.can_explode():
-            self.prv().val += self.L.val
-            self.nxt().val += self.R.val
+        if self.__is_number():
+            return False
+        if D > 4 and self.L.__is_number() and self.R.__is_number():
+            self.__prv().val += self.L.val
+            self.__nxt().val += self.R.val
             self.val, self.L, self.R = 0, None, None
             return True
-        if self.L and self.L.explode(D + 1):
-            return True
-        if self.R and self.R.explode(D + 1):
-            return True
-        return False
+        return self.L.explode(D + 1) or self.R.explode(D + 1)
 
-    def prv(self):
+    def __is_number(self):
+        return self.L is None and self.R is None
+
+    def __prv(self):
         if not self.P:
             return SnailFish(0)
         if self == self.P.L:
-            return self.P.prv()
-        c = self.P.L
-        while c.R:
-            c = c.R
-        return c
+            return self.P.__prv()
+        cur = self.P.L
+        while cur.R:
+            cur = cur.R
+        return cur
 
-    def nxt(self):
+    def __nxt(self):
         if not self.P:
             return SnailFish(0)
         if self == self.P.R:
-            return self.P.nxt()
-        c = self.P.R
-        while c.L:
-            c = c.L
-        return c
+            return self.P.__nxt()
+        cur = self.P.R
+        while cur.L:
+            cur = cur.L
+        return cur
 
     def split(self):
-        if self.val is not None and self.val > 9:
+        if self.val > 9:
             self.L = SnailFish(self.val // 2, P=self)
             self.R = SnailFish((self.val + 1) // 2, P=self)
-            self.val = None
+            self.val = -1
             return True
-        if self.val is None:
-            if self.L.split():
-                return True
-            if self.R.split():
-                return True
-        return False
+        if self.val >= 0:
+            return False
+        return self.L.split() or self.R.split()
+
+    def add(self, other):
+        ans = SnailFish(L=self.copy(), R=other.copy())
+        while ans.explode() or ans.split():
+            pass
+        return ans
 
     def copy(self):
         L = self.L.copy() if self.L else self.L
@@ -96,20 +96,8 @@ def parse(input):
 
     return inner()
 
-
-def add(A, B):
-    s = SnailFish(L=A.copy(), R=B.copy())
-    while s.explode() or s.split():
-        pass
-    return s
-
-
 best = -float('inf')
 numbers = [parse(line.strip()) for line in open('data/prob18.dat').readlines()]
-for a in numbers:
-    for b in numbers:
-        if b == a:
-            continue
-        best = max(best, add(a, b).magnitude())
+for a, b in product(numbers, repeat=2):
+    best = max(best, a.add(b).magnitude())
 print(best)
-
