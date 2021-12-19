@@ -4,8 +4,7 @@ mod = namedtuple("mod", ["flip", "rotate", "shift"])
 
 f = open('data/prob19.dat')
 
-visibility = 1000
-
+inf = float('inf')
 scanner_reads = []
 for line in f.readlines():
     if line.startswith("---"):
@@ -13,57 +12,58 @@ for line in f.readlines():
     elif line.strip():
         scanner_reads[-1].add(tuple(map(int, line.replace(' ', '').strip().split(','))))
 
+def overlap(m1, m2, D):
+    overlaps = 0
+    next_hop = inf
+    i, j = 0, 0
+    lenM1 = len(m1)
+    lenM2 = len(m2)
+    while i < lenM1 and j < lenM2:
+        n = m2[j] + D
+        if m1[i] > n:
+            next_hop = min(next_hop, m1[i] - n)
+            j += 1
+        elif m1[i] < n:
+            next_hop = min(next_hop, n - m1[i])
+            i += 1
+        else:
+            overlaps += 1
+            j += 1
+            i += 1
+    return overlaps, D + next_hop
+
+
 def axis_metric(data, key):
     return sorted([key(point) for point in data])
 
-def overlap(m1, m2, delta):
-    ans = 0
-    next_hop = 10 ** 10
-    i, j = 0, 0
-    while i < len(m1) and j < len(m2):
-        if m1[i] == (m2[j] + delta):
-            ans, i, j = ans + 1, i+1, j+1
-        elif m1[i] > (m2[j] + delta):
-            next_hop = min(next_hop, abs(m1[i] - m2[j] - delta))
-            j = j + 1
-        elif m1[i] < (m2[j] + delta):
-            next_hop = min(next_hop, abs(m2[j] + delta - m1[i]))
-            i = i + 1
-    return ans, delta + next_hop
+
+def axes_all(s):
+    yield False, 0, axis_metric(scanner_reads[s], key=lambda point: point[0]),
+    yield True, 0, axis_metric(scanner_reads[s], key=lambda point: -point[0]),
+    yield False, 1, axis_metric(scanner_reads[s], key=lambda point: point[1]),
+    yield True, 1, axis_metric(scanner_reads[s], key=lambda point: -point[1]),
+    yield False, 2, axis_metric(scanner_reads[s], key=lambda point: point[2]),
+    yield True, 2, axis_metric(scanner_reads[s], key=lambda point: -point[2]),
+
+def axes_positive(s):
+    yield 0, axis_metric(scanner_reads[s], key=lambda point: point[0]),
+    yield 1, axis_metric(scanner_reads[s], key=lambda point: point[1]),
+    yield 2, axis_metric(scanner_reads[s], key=lambda point: point[2]),
 
 
-def axes_all(scanner):
-    yield False, 0, axis_metric(scanner, key=lambda point: point[0])
-    yield True, 0, axis_metric(scanner, key=lambda point: -point[0])
-    yield False, 1, axis_metric(scanner, key=lambda point: point[1])
-    yield True, 1, axis_metric(scanner, key=lambda point: -point[1])
-    yield False, 2, axis_metric(scanner, key=lambda point: point[2])
-    yield True, 2, axis_metric(scanner, key=lambda point: -point[2])
-
-def axes_positive(scanner):
-    yield False, 0, axis_metric(scanner, key=lambda point: point[0])
-    yield False, 1, axis_metric(scanner, key=lambda point: point[1])
-    yield False, 2, axis_metric(scanner, key=lambda point: point[2])
-
-
-def find_modification_set(from_points, to_points):
+def find_modification_set(scannerA, scannerB):
     mods = {}
-    for _, o1, m1 in axes_positive(from_points):
-        for r2, o2, m2 in axes_all(to_points):
-            max_i = 11
-            max_d = -1
-            d = -(2 * visibility + 2)
-            while d < 2 * visibility:
+    for o1, m1 in axes_positive(scannerA):
+        for r2, o2, m2 in axes_all(scannerB):
+            d_min, d_max = -2002, 2002
+            d = d_min
+            while d < d_max:
                 i, next_d = overlap(m1, m2, d)
-                if i > max_i:
-                    max_i = i
-                    max_d = d
-                d = next_d
-
-            if max_i > 11:
-                mods[o1] = mod(r2, o2, max_d)
-                print(max_d, max_i)
-
+                if i < 12:
+                    d = next_d
+                else:
+                    mods[o1] = mod(r2, o2, d)
+                    d = d_max
     return mods
 
 
@@ -73,7 +73,6 @@ def modify(points, modification):
         p[modification[1].rotate] * (-1 if modification[1].flip else 1) + modification[1].shift,
         p[modification[2].rotate] * (-1 if modification[2].flip else 1) + modification[2].shift)
         for p in points}
-
 
 graph = defaultdict(set)
 transfers = {}
@@ -90,7 +89,7 @@ while to_reach:
         continue
     for j in set(to_reach):
         print('i =', i, 'j =', j)
-        x = find_modification_set(scanner_reads[i], scanner_reads[j])
+        x = find_modification_set(i, j)
         if x:
             transfers[j, i] = x
             graph[i].add(j)
@@ -98,20 +97,17 @@ while to_reach:
             work.append(j)
             print('reached', j, 'from', i, 'remaining', to_reach)
 
-out = set()
-visited = set()
 
 points = {i: scanner_reads[i] for i in range(len(scanner_reads))}
 scanner_loc = {i: {(0, 0, 0), } for i in range(len(scanner_reads))}
 
 
+visited = set()
 def dfs(c, p=None):
     visited.add(c)
     for n in graph[c]:
-        if n in visited:
-            continue
-        visited.add(n)
-        dfs(n, c)
+        if n not in visited:
+            dfs(n, c)
 
     if p is not None:
         print("migrating from", c, "to", p)
