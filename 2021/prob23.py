@@ -1,8 +1,8 @@
 from collections import defaultdict
 import heapq
 
-def manhatan(old_point, new_point):
-  return abs(old_point[1] - new_point[1]) + abs(old_point[0] - new_point[0])
+def manhatan(A, B):
+  return abs(A[1] - B[1]) + abs(A[0] - B[0])
 
 costs = {'A': 1, 'B': 10, 'C': 100, 'D': 1000}
 room_points = {'A':3, 'B':5, 'C':7, 'D':9}
@@ -97,14 +97,14 @@ for r, line in enumerate(space):
 s = State(start_position)
 best = defaultdict(lambda:float('inf'))
 best[s] = 0
-positions = [s]
 
-while positions:
-  old_pos = heapq.heappop(positions)
-  if old_pos.is_done():
-    print("found!", old_pos.cost)
+states = [s]
+while states:
+  cur_state = heapq.heappop(states)
+  if cur_state.is_done():
+    print("found!", cur_state.cost)
     break
-  for new_pos in old_pos.next_states():
-    if best[new_pos] > new_pos.cost:
-      best[new_pos] = new_pos.cost
-      heapq.heappush(positions, new_pos)
+  for new_state in cur_state.next_states():
+    if best[new_state] > new_state.cost:
+      best[new_state] = new_state.cost
+      heapq.heappush(states, new_state)
